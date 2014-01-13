@@ -7,13 +7,15 @@
 // PXLME.JS is licensed under the MIT License.
 // http://www.opensource.org/licenses/mit-license.php
 
+(function(){
+
 var PXLME = PXLME || {};
 
 // set true when Animation is running
-PXLME.running = false;
+var running = false;
 
 // run when move mouse on canvas
-PXLME.mousemove = function( e, stage ) {
+var mousemove = function( e, stage ) {
 
   // set Cursor Position
   var rect = stage.canvas.getBoundingClientRect();
@@ -26,10 +28,10 @@ PXLME.mousemove = function( e, stage ) {
 }
 
 // create array of all Stages
-PXLME.stages = [];
+var stages = [];
 
 // a Stage represents the the Canvas where the App is rendered on
-PXLME.Stage = function( data ) {
+var Stage = function( data ) {
   
   var self = this;
   
@@ -45,7 +47,7 @@ PXLME.Stage = function( data ) {
   this.height = data.height || 320;
   
   // set cursor radius
-  this.cursor = new PXLME.Cursor( data.cursorRadius );
+  this.cursor = new Cursor( data.cursorRadius );
   
   // set Pixel Acceleration
   this.speedUp   = data.speedUp || 1.3;
@@ -71,7 +73,7 @@ PXLME.Stage = function( data ) {
   
   // check if browser supports event listener
   if ( window.addEventListener ) {
-    this.canvas.addEventListener( 'mousemove' , function(e) { PXLME.mousemove( e, self ); }, false );
+    this.canvas.addEventListener( 'mousemove' , function(e) { mousemove( e, self ); }, false );
   }
   
   // set Pixel Colors
@@ -106,25 +108,22 @@ PXLME.Stage = function( data ) {
       
         // create Pixel and push it to Pixels array
         this.pixels.push( 
-          new PXLME.Pixel( x, y, matrix[y].charAt(x), this )
+          new Pixel( x, y, matrix[y].charAt(x), this )
         );
       }
     }
   }
   
-  // push this Stage to Stages array
-  PXLME.stages.push( this );
-  
   // start Animation Loop when it is the first stage
-  if ( !PXLME.running ) {
-    PXLME.running = true;
-    requestAnimFrame( PXLME.render );
+  if ( !running ) {
+    running = true;
+    requestAnimFrame( render );
   }
 
 }
 
 // render the Stage
-PXLME.Stage.prototype.render = function() {
+Stage.prototype.render = function() {
 
   // clear Canvas Stage
   this.ctx.clearRect( 0, 0, this.width, this.height );
@@ -143,7 +142,7 @@ PXLME.Stage.prototype.render = function() {
 }
 
 // a Stage can have multiply Pixels
-PXLME.Pixel = function( x, y, color, stage ) {
+var Pixel = function( x, y, color, stage ) {
   
   // set Pixel Stage
   this.stage = stage;
@@ -171,12 +170,12 @@ PXLME.Pixel = function( x, y, color, stage ) {
 }
 
 // set the new Pixel position
-PXLME.Pixel.prototype.move = function() {
+Pixel.prototype.move = function() {
 
   // get distance if Cursor is on Stage
   if ( this.stage.cursor.onStage ) {
     // get distance between Cursor and Pixel
-    var d = PXLME.distance( this.stage.cursor , this );
+    var d = distance( this.stage.cursor , this );
   } else {
     // set distace inaccessible
     var d = this.stage.cursor.radius + 100;
@@ -205,8 +204,8 @@ PXLME.Pixel.prototype.move = function() {
   
   // set Start Position if Pixel is nearby 
   if (
-    PXLME.distance( this, this.start ) < 1 &&
-    PXLME.distance( this, { x : this.x - this.speed.x, y : this.y - this.speed.y }) < this.stage.speedUp
+    distance( this, this.start ) < 1 &&
+    distance( this, { x : this.x - this.speed.x, y : this.y - this.speed.y }) < this.stage.speedUp
   ){
     this.speed.y = 0;
     this.speed.x = 0;
@@ -218,13 +217,13 @@ PXLME.Pixel.prototype.move = function() {
   // move pixels
   this.x += this.speed.x;
   this.y += this.speed.y;
-  this.z = this.stage.pixelSize + PXLME.distance( this, this.start ) * this.stage.pixelSizeRatio;
+  this.z = this.stage.pixelSize + distance( this, this.start ) * this.stage.pixelSizeRatio;
   if ( this.z > this.stage.pixelSizeMax ){ this.z = this.stage.pixelSizeMax; }
 
 }
 
 // render the Pixel
-PXLME.Pixel.prototype.render = function() {
+Pixel.prototype.render = function() {
 
   // draw Pixels on Canvas
   this.stage.ctx.beginPath();
@@ -239,20 +238,20 @@ PXLME.Pixel.prototype.render = function() {
 }
 
 // run a frame and render on canvas
-PXLME.render = function() {
+var render = function() {
 
   // request new frame
-  requestAnimFrame( PXLME.render );
+  requestAnimFrame( render );
   
   // render all Stages
-  for ( var i in PXLME.stages ) {
-    PXLME.stages[i].render();
+  for ( var i in stages ) {
+    stages[i].render();
   }
 
 }
 
 // every stage can have another cursor
-PXLME.Cursor = function( radius ) {
+var Cursor = function( radius ) {
   
   this.radius = radius || 30;
   this.x = 0;
@@ -262,7 +261,7 @@ PXLME.Cursor = function( radius ) {
 }
 
 // get distance between two points
-PXLME.distance = function( p1, p2 ) {
+var distance = function( p1, p2 ) {
 
   // pythagoras
   var xs = p2.x - p1.x;
@@ -272,13 +271,20 @@ PXLME.distance = function( p1, p2 ) {
 }
 
 // request a Animation Frame
-window.requestAnimFrame = ( function() {
-  return (
+var requestAnimFrame = 
     window.requestAnimationFrame       ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame    ||
     window.oRequestAnimationFrame      ||
     window.msRequestAnimationFrame     ||
     function( callback ) { window.setTimeout( callback, 1000 / 60 ); }
-  );
-})();
+
+var addStage = function(opts){
+  stages.push( new Stage(opts) );
+}
+
+window.PXLME = {
+  addStage : addStage
+};
+
+}());
